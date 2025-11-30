@@ -23,6 +23,7 @@ from core.aip_manager import AIPManager
 from core.build_manager import BuildManager
 from utils.image_converter import ImageConverter
 from utils.powershell_editor import PowerShellEditor
+from gui.modern_dark_theme import apply_modern_dark_theme
 
 
 class BuildThread(QThread):
@@ -67,8 +68,9 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         """Initialize the user interface."""
-        self.setWindowTitle("Advanced Installer Project Builder")
-        self.setGeometry(100, 100, 1000, 700)
+        self.setWindowTitle("Advanced Installer Project Builder - Modern Edition")
+        self.setGeometry(100, 100, 1200, 800)
+        self.setMinimumSize(1000, 700)
 
         # Central widget
         central_widget = QWidget()
@@ -76,7 +78,15 @@ class MainWindow(QMainWindow):
 
         # Main layout
         main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(20, 20, 20, 20)
+        main_layout.setSpacing(15)
         central_widget.setLayout(main_layout)
+
+        # Добавляем стильный заголовок
+        title_label = QLabel("⚙️ Advanced Installer Project Builder")
+        title_label.setAccessibleName("heading")
+        title_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(title_label)
 
         # Project selection section
         project_group = QGroupBox("Проект Advanced Installer")
@@ -175,9 +185,9 @@ class MainWindow(QMainWindow):
 
         # Preview
         self.icon_preview = QLabel()
+        self.icon_preview.setObjectName("icon_preview")
         self.icon_preview.setFixedSize(256, 256)
         self.icon_preview.setAlignment(Qt.AlignCenter)
-        self.icon_preview.setStyleSheet("border: 1px solid #ccc; background: #f0f0f0;")
         self.icon_preview.setText("Предпросмотр")
 
         icon_layout.addWidget(self.icon_preview, alignment=Qt.AlignCenter)
@@ -971,7 +981,9 @@ class MainWindow(QMainWindow):
 def main():
     """Main entry point."""
     app = QApplication(sys.argv)
-    app.setStyle('Fusion')  # Modern look
+
+    # Применяем современную темную тему
+    apply_modern_dark_theme(app)
 
     window = MainWindow()
     window.show()
