@@ -25,6 +25,7 @@ from utils.image_converter import ImageConverter
 from utils.powershell_editor import PowerShellEditor
 from gui.modern_dark_theme import apply_modern_dark_theme
 from gui.image_preview_widget import ImagePreviewWidget
+from gui.image_editor_widget import ImageEditorWidget
 
 
 class BuildThread(QThread):
@@ -64,6 +65,7 @@ class MainWindow(QMainWindow):
         self.image_converter = ImageConverter()
         self.ps_editor = None
         self.current_aip_path = None
+        self.current_icon_pixmap = None  # Store current icon for editing
 
         self.init_ui()
 
@@ -200,11 +202,19 @@ class MainWindow(QMainWindow):
 
         icon_layout.addWidget(self.icon_preview, alignment=Qt.AlignCenter)
 
-        # Convert button
+        # Edit and Convert buttons
+        buttons_layout = QHBoxLayout()
+
+        edit_btn = QPushButton("Редактировать изображение")
+        edit_btn.clicked.connect(self.edit_icon_image)
+
         convert_btn = QPushButton("Конвертировать и применить к проекту")
         convert_btn.clicked.connect(self.convert_and_apply_icon)
 
-        icon_layout.addWidget(convert_btn)
+        buttons_layout.addWidget(edit_btn)
+        buttons_layout.addWidget(convert_btn)
+
+        icon_layout.addLayout(buttons_layout)
 
         icon_group.setLayout(icon_layout)
         left_layout.addWidget(icon_group)
@@ -572,12 +582,76 @@ class MainWindow(QMainWindow):
             # Show preview
             pixmap = QPixmap(file_path)
             if not pixmap.isNull():
+                self.current_icon_pixmap = pixmap  # Store for editing
                 scaled_pixmap = pixmap.scaled(
                     256, 256,
                     Qt.KeepAspectRatio,
                     Qt.SmoothTransformation
                 )
                 self.icon_preview.setPixmap(scaled_pixmap)
+
+    def edit_icon_image(self):
+        """Open image editor dialog."""
+        if not self.current_icon_pixmap:
+            QMessageBox.warning(self, "Ошибка", "Сначала загрузите изображение")
+            return
+
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QPushButton, QHBoxLayout
+
+        # Create editor dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Редактор изображений")
+        dialog.setMinimumSize(900, 700)
+
+        layout = QVBoxLayout()
+
+        # Create editor widget
+        editor = ImageEditorWidget()
+        editor.load_from_pixmap(self.current_icon_pixmap)
+        layout.addWidget(editor)
+
+        # Dialog buttons
+        button_layout = QHBoxLayout()
+
+        apply_btn = QPushButton("Применить изменения")
+        cancel_btn = QPushButton("Отмена")
+
+        def apply_changes():
+            # Get edited image
+            edited_pixmap = editor.get_edited_image()
+            if edited_pixmap:
+                self.current_icon_pixmap = edited_pixmap
+                # Update preview
+                scaled_pixmap = edited_pixmap.scaled(
+                    256, 256,
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+                self.icon_preview.setPixmap(scaled_pixmap)
+
+                # Save to temporary file
+                import tempfile
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.png')
+                temp_path = temp_file.name
+                temp_file.close()
+
+                if edited_pixmap.save(temp_path):
+                    self.icon_path_edit.setText(temp_path)
+                    QMessageBox.information(self, "Успех", "Изменения применены!\nТеперь вы можете конвертировать изображение.")
+
+            dialog.accept()
+
+        apply_btn.clicked.connect(apply_changes)
+        cancel_btn.clicked.connect(dialog.reject)
+
+        button_layout.addStretch()
+        button_layout.addWidget(apply_btn)
+        button_layout.addWidget(cancel_btn)
+
+        layout.addLayout(button_layout)
+        dialog.setLayout(layout)
+
+        dialog.exec_()
 
     def convert_and_apply_icon(self):
         """Convert and apply icon to the project."""
