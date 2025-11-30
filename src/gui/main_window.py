@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTabWidget, QPushButton, QLabel, QLineEdit, QTextEdit,
     QFileDialog, QMessageBox, QGroupBox, QFormLayout, QComboBox,
-    QListWidget, QSplitter, QProgressBar
+    QListWidget, QSplitter, QProgressBar, QTableWidget, QTableWidgetItem,
+    QCheckBox, QHeaderView
 )
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QPixmap, QIcon
@@ -278,19 +279,151 @@ class MainWindow(QMainWindow):
         script_group.setLayout(script_layout)
         layout.addWidget(script_group)
 
-        # Splitter for editor and versions
-        splitter = QSplitter(Qt.Horizontal)
+        # Sub-tabs for different editing modes
+        self.ps_edit_tabs = QTabWidget()
+
+        # Parameters tab
+        self.create_ps_parameters_tab()
+
+        # URLs tab
+        self.create_ps_urls_tab()
+
+        # Sections tab
+        self.create_ps_sections_tab()
+
+        # Raw editor tab
+        self.create_ps_raw_editor_tab()
+
+        layout.addWidget(self.ps_edit_tabs)
+
+        tab.setLayout(layout)
+        self.tabs.addTab(tab, "Редактор PowerShell")
+
+    def create_ps_parameters_tab(self):
+        """Create the parameters editing tab."""
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Info label
+        info_label = QLabel("Редактирование переменных из секции $adtSession:")
+        layout.addWidget(info_label)
+
+        # Parameters table
+        self.ps_params_table = QTableWidget()
+        self.ps_params_table.setColumnCount(3)
+        self.ps_params_table.setHorizontalHeaderLabels(["Параметр", "Значение", "Тип"])
+        self.ps_params_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.ps_params_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.ps_params_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+
+        layout.addWidget(self.ps_params_table)
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+
+        save_params_btn = QPushButton("Сохранить параметры")
+        save_params_btn.clicked.connect(self.save_ps_parameters)
+
+        refresh_params_btn = QPushButton("Обновить")
+        refresh_params_btn.clicked.connect(self.refresh_ps_parameters)
+
+        btn_layout.addWidget(save_params_btn)
+        btn_layout.addWidget(refresh_params_btn)
+        btn_layout.addStretch()
+
+        layout.addLayout(btn_layout)
+
+        tab.setLayout(layout)
+        self.ps_edit_tabs.addTab(tab, "Параметры")
+
+    def create_ps_urls_tab(self):
+        """Create the URLs editing tab."""
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Info label
+        info_label = QLabel("Редактирование URL-ссылок для загрузки файлов:")
+        layout.addWidget(info_label)
+
+        # URLs table
+        self.ps_urls_table = QTableWidget()
+        self.ps_urls_table.setColumnCount(2)
+        self.ps_urls_table.setHorizontalHeaderLabels(["Переменная", "URL"])
+        self.ps_urls_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.ps_urls_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+
+        layout.addWidget(self.ps_urls_table)
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+
+        save_urls_btn = QPushButton("Сохранить URL")
+        save_urls_btn.clicked.connect(self.save_ps_urls)
+
+        refresh_urls_btn = QPushButton("Обновить")
+        refresh_urls_btn.clicked.connect(self.refresh_ps_urls)
+
+        btn_layout.addWidget(save_urls_btn)
+        btn_layout.addWidget(refresh_urls_btn)
+        btn_layout.addStretch()
+
+        layout.addLayout(btn_layout)
+
+        tab.setLayout(layout)
+        self.ps_edit_tabs.addTab(tab, "URL")
+
+    def create_ps_sections_tab(self):
+        """Create the sections toggle tab."""
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Info label
+        info_label = QLabel("Включение/отключение этапов установки:")
+        layout.addWidget(info_label)
+
+        # Sections list
+        self.ps_sections_layout = QVBoxLayout()
+        self.ps_section_checkboxes = {}
+
+        sections_widget = QWidget()
+        sections_widget.setLayout(self.ps_sections_layout)
+
+        layout.addWidget(sections_widget)
+        layout.addStretch()
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+
+        save_sections_btn = QPushButton("Сохранить изменения")
+        save_sections_btn.clicked.connect(self.save_ps_sections)
+
+        refresh_sections_btn = QPushButton("Обновить")
+        refresh_sections_btn.clicked.connect(self.refresh_ps_sections)
+
+        btn_layout.addWidget(save_sections_btn)
+        btn_layout.addWidget(refresh_sections_btn)
+        btn_layout.addStretch()
+
+        layout.addLayout(btn_layout)
+
+        tab.setLayout(layout)
+        self.ps_edit_tabs.addTab(tab, "Этапы установки")
+
+    def create_ps_raw_editor_tab(self):
+        """Create the raw text editor tab."""
+        tab = QWidget()
+        layout = QVBoxLayout()
+
+        # Info label
+        info_label = QLabel("Прямое редактирование скрипта (для опытных пользователей):")
+        layout.addWidget(info_label)
 
         # Editor
-        editor_widget = QWidget()
-        editor_layout = QVBoxLayout()
-
         self.ps_editor_text = QTextEdit()
-        editor_layout.addWidget(QLabel("Содержимое скрипта:"))
-        editor_layout.addWidget(self.ps_editor_text)
+        layout.addWidget(self.ps_editor_text)
 
-        # Editor buttons
-        editor_btn_layout = QHBoxLayout()
+        # Buttons
+        btn_layout = QHBoxLayout()
 
         save_ps_btn = QPushButton("Сохранить")
         save_ps_btn.clicked.connect(self.save_ps_script)
@@ -298,38 +431,19 @@ class MainWindow(QMainWindow):
         create_version_btn = QPushButton("Создать версию")
         create_version_btn.clicked.connect(self.create_ps_version)
 
-        editor_btn_layout.addWidget(save_ps_btn)
-        editor_btn_layout.addWidget(create_version_btn)
-        editor_btn_layout.addStretch()
+        # Versions list button
+        show_versions_btn = QPushButton("Показать версии")
+        show_versions_btn.clicked.connect(self.show_ps_versions_dialog)
 
-        editor_layout.addLayout(editor_btn_layout)
-        editor_widget.setLayout(editor_layout)
+        btn_layout.addWidget(save_ps_btn)
+        btn_layout.addWidget(create_version_btn)
+        btn_layout.addWidget(show_versions_btn)
+        btn_layout.addStretch()
 
-        # Versions list
-        versions_widget = QWidget()
-        versions_layout = QVBoxLayout()
-
-        versions_layout.addWidget(QLabel("Версии:"))
-        self.ps_versions_list = QListWidget()
-        self.ps_versions_list.itemDoubleClicked.connect(self.restore_ps_version)
-
-        versions_layout.addWidget(self.ps_versions_list)
-
-        refresh_versions_btn = QPushButton("Обновить список")
-        refresh_versions_btn.clicked.connect(self.refresh_ps_versions)
-
-        versions_layout.addWidget(refresh_versions_btn)
-        versions_widget.setLayout(versions_layout)
-
-        splitter.addWidget(editor_widget)
-        splitter.addWidget(versions_widget)
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 1)
-
-        layout.addWidget(splitter)
+        layout.addLayout(btn_layout)
 
         tab.setLayout(layout)
-        self.tabs.addTab(tab, "Редактор PowerShell")
+        self.ps_edit_tabs.addTab(tab, "Текстовый редактор")
 
     # Event handlers
     def browse_aip_file(self):
@@ -567,14 +681,17 @@ class MainWindow(QMainWindow):
         try:
             self.ps_editor = PowerShellEditor(ps_path)
 
-            # Load content
+            # Load content into raw editor
             content = self.ps_editor.read_script()
             self.ps_editor_text.setPlainText(content)
 
-            # Refresh versions list
-            self.refresh_ps_versions()
+            # Refresh all tabs
+            self.refresh_ps_parameters()
+            self.refresh_ps_urls()
+            self.refresh_ps_sections()
 
             self.statusBar().showMessage(f"Скрипт загружен: {Path(ps_path).name}")
+            QMessageBox.information(self, "Успех", "Скрипт успешно загружен и распарсен!")
 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось загрузить скрипт:\n{str(e)}")
@@ -624,53 +741,231 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Ошибка", f"Не удалось создать версию:\n{str(e)}")
 
-    def refresh_ps_versions(self):
-        """Refresh the PowerShell versions list."""
+    def refresh_ps_parameters(self):
+        """Refresh the parameters table."""
         if not self.ps_editor:
             return
 
-        self.ps_versions_list.clear()
+        self.ps_params_table.setRowCount(0)
 
-        versions = self.ps_editor.list_versions()
+        parameters = self.ps_editor.get_parameters()
 
-        for version in versions:
-            item_text = f"{version['name']} ({version['modified'].strftime('%Y-%m-%d %H:%M')})"
-            self.ps_versions_list.addItem(item_text)
-            # Store the path in item data
-            item = self.ps_versions_list.item(self.ps_versions_list.count() - 1)
-            item.setData(Qt.UserRole, version['path'])
+        # Filter only session variables (not URLs)
+        session_params = [p for p in parameters if p.section == 'variables' and p.parameter_type != 'url']
 
-    def restore_ps_version(self, item):
-        """Restore a PowerShell script version."""
+        self.ps_params_table.setRowCount(len(session_params))
+
+        for row, param in enumerate(session_params):
+            # Parameter name (read-only)
+            name_item = QTableWidgetItem(param.name)
+            name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
+            self.ps_params_table.setItem(row, 0, name_item)
+
+            # Parameter value (editable)
+            value_item = QTableWidgetItem(param.value)
+            self.ps_params_table.setItem(row, 1, value_item)
+
+            # Parameter type (read-only)
+            type_item = QTableWidgetItem(param.parameter_type)
+            type_item.setFlags(type_item.flags() & ~Qt.ItemIsEditable)
+            self.ps_params_table.setItem(row, 2, type_item)
+
+    def save_ps_parameters(self):
+        """Save updated parameters to script."""
+        if not self.ps_editor:
+            QMessageBox.warning(self, "Ошибка", "Сначала загрузите скрипт")
+            return
+
+        try:
+            updates = {}
+
+            # Collect all updated values from table
+            for row in range(self.ps_params_table.rowCount()):
+                param_name = self.ps_params_table.item(row, 0).text()
+                new_value = self.ps_params_table.item(row, 1).text()
+                updates[param_name] = new_value
+
+            # Batch update
+            results = self.ps_editor.batch_update_parameters(updates, create_backup=True)
+
+            # Reload content
+            content = self.ps_editor.read_script()
+            self.ps_editor_text.setPlainText(content)
+
+            self.statusBar().showMessage("Параметры сохранены")
+            QMessageBox.information(self, "Успех", f"Обновлено параметров: {sum(results.values())}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить параметры:\n{str(e)}")
+
+    def refresh_ps_urls(self):
+        """Refresh the URLs table."""
         if not self.ps_editor:
             return
 
-        version_path = item.data(Qt.UserRole)
+        self.ps_urls_table.setRowCount(0)
 
-        reply = QMessageBox.question(
-            self,
-            "Восстановить версию",
-            f"Восстановить версию:\n{Path(version_path).name}?\n\n"
-            "Текущая версия будет сохранена как резервная копия.",
-            QMessageBox.Yes | QMessageBox.No
-        )
+        urls = self.ps_editor.get_urls()
 
-        if reply == QMessageBox.Yes:
-            try:
-                self.ps_editor.restore_version(version_path, create_backup=True)
+        self.ps_urls_table.setRowCount(len(urls))
 
+        for row, url_param in enumerate(urls):
+            # Variable name (read-only)
+            name_item = QTableWidgetItem(url_param.name)
+            name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
+            self.ps_urls_table.setItem(row, 0, name_item)
+
+            # URL value (editable)
+            url_item = QTableWidgetItem(url_param.value)
+            self.ps_urls_table.setItem(row, 1, url_item)
+
+    def save_ps_urls(self):
+        """Save updated URLs to script."""
+        if not self.ps_editor:
+            QMessageBox.warning(self, "Ошибка", "Сначала загрузите скрипт")
+            return
+
+        try:
+            updates = {}
+
+            # Collect all updated values from table
+            for row in range(self.ps_urls_table.rowCount()):
+                var_name = self.ps_urls_table.item(row, 0).text()
+                new_url = self.ps_urls_table.item(row, 1).text()
+                updates[var_name] = new_url
+
+            # Batch update
+            results = self.ps_editor.batch_update_parameters(updates, create_backup=True)
+
+            # Reload content
+            content = self.ps_editor.read_script()
+            self.ps_editor_text.setPlainText(content)
+
+            self.statusBar().showMessage("URL сохранены")
+            QMessageBox.information(self, "Успех", f"Обновлено URL: {sum(results.values())}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить URL:\n{str(e)}")
+
+    def refresh_ps_sections(self):
+        """Refresh the sections checkboxes."""
+        if not self.ps_editor:
+            return
+
+        # Clear existing checkboxes
+        for i in reversed(range(self.ps_sections_layout.count())):
+            widget = self.ps_sections_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+        self.ps_section_checkboxes.clear()
+
+        sections = self.ps_editor.get_sections()
+
+        for section in sections:
+            checkbox = QCheckBox(f"{section.description} ({section.name})")
+            checkbox.setChecked(section.enabled)
+            checkbox.setProperty('section_name', section.name)
+
+            self.ps_section_checkboxes[section.name] = checkbox
+            self.ps_sections_layout.addWidget(checkbox)
+
+    def save_ps_sections(self):
+        """Save section enable/disable states."""
+        if not self.ps_editor:
+            QMessageBox.warning(self, "Ошибка", "Сначала загрузите скрипт")
+            return
+
+        try:
+            modified = False
+
+            for section_name, checkbox in self.ps_section_checkboxes.items():
+                enabled = checkbox.isChecked()
+                if self.ps_editor.toggle_section(section_name, enabled, create_backup=not modified):
+                    modified = True
+
+            if modified:
                 # Reload content
                 content = self.ps_editor.read_script()
                 self.ps_editor_text.setPlainText(content)
 
-                self.statusBar().showMessage("Версия восстановлена")
-                QMessageBox.information(self, "Успех", "Версия успешно восстановлена!")
+                self.statusBar().showMessage("Секции обновлены")
+                QMessageBox.information(self, "Успех", "Состояние секций успешно обновлено!")
+            else:
+                QMessageBox.information(self, "Информация", "Изменений не обнаружено")
 
-                # Refresh versions
-                self.refresh_ps_versions()
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось сохранить секции:\n{str(e)}")
 
-            except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Не удалось восстановить версию:\n{str(e)}")
+    def show_ps_versions_dialog(self):
+        """Show versions dialog."""
+        if not self.ps_editor:
+            QMessageBox.warning(self, "Ошибка", "Сначала загрузите скрипт")
+            return
+
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QListWidget, QPushButton, QHBoxLayout
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Версии скрипта")
+        dialog.setMinimumSize(500, 400)
+
+        layout = QVBoxLayout()
+
+        versions_list = QListWidget()
+        versions = self.ps_editor.list_versions()
+
+        for version in versions:
+            item_text = f"{version['name']} ({version['modified'].strftime('%Y-%m-%d %H:%M')})"
+            versions_list.addItem(item_text)
+            item = versions_list.item(versions_list.count() - 1)
+            item.setData(Qt.UserRole, version['path'])
+
+        layout.addWidget(QLabel("Двойной клик для восстановления версии:"))
+        layout.addWidget(versions_list)
+
+        # Buttons
+        btn_layout = QHBoxLayout()
+        close_btn = QPushButton("Закрыть")
+        close_btn.clicked.connect(dialog.close)
+        btn_layout.addStretch()
+        btn_layout.addWidget(close_btn)
+
+        layout.addLayout(btn_layout)
+        dialog.setLayout(layout)
+
+        def restore_version(item):
+            version_path = item.data(Qt.UserRole)
+            reply = QMessageBox.question(
+                dialog,
+                "Восстановить версию",
+                f"Восстановить версию:\n{Path(version_path).name}?\n\n"
+                "Текущая версия будет сохранена как резервная копия.",
+                QMessageBox.Yes | QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                try:
+                    self.ps_editor.restore_version(version_path, create_backup=True)
+
+                    # Reload content
+                    content = self.ps_editor.read_script()
+                    self.ps_editor_text.setPlainText(content)
+
+                    # Refresh all tabs
+                    self.refresh_ps_parameters()
+                    self.refresh_ps_urls()
+                    self.refresh_ps_sections()
+
+                    self.statusBar().showMessage("Версия восстановлена")
+                    QMessageBox.information(dialog, "Успех", "Версия успешно восстановлена!")
+                    dialog.close()
+
+                except Exception as e:
+                    QMessageBox.critical(dialog, "Ошибка", f"Не удалось восстановить версию:\n{str(e)}")
+
+        versions_list.itemDoubleClicked.connect(restore_version)
+
+        dialog.exec_()
 
 
 def main():

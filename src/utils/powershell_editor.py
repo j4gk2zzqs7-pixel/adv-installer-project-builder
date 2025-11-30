@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 from typing import Optional, List
+from .ps1_parser import PS1Parser, ScriptParameter, ScriptSection
 
 
 class PowerShellEditor:
@@ -29,6 +30,9 @@ class PowerShellEditor:
 
         self.versions_dir = self.script_path.parent / ".versions" / self.script_path.stem
         self.versions_dir.mkdir(parents=True, exist_ok=True)
+
+        self.parser: Optional[PS1Parser] = None
+        self._load_parser()
 
     def read_script(self) -> str:
         """
@@ -224,3 +228,119 @@ class PowerShellEditor:
                 deleted_count += 1
 
         return deleted_count
+
+    def _load_parser(self):
+        """Load the parser with current script content."""
+        content = self.read_script()
+        self.parser = PS1Parser(content)
+        self.parser.parse()
+
+    def get_parameters(self) -> List[ScriptParameter]:
+        """
+        Get all configurable parameters from the script.
+
+        Returns:
+            List of ScriptParameter objects
+        """
+        if not self.parser:
+            self._load_parser()
+        return self.parser.parameters
+
+    def get_sections(self) -> List[ScriptSection]:
+        """
+        Get all sections/phases from the script.
+
+        Returns:
+            List of ScriptSection objects
+        """
+        if not self.parser:
+            self._load_parser()
+        return self.parser.sections
+
+    def get_urls(self) -> List[ScriptParameter]:
+        """
+        Get all URL parameters from the script.
+
+        Returns:
+            List of URL ScriptParameter objects
+        """
+        if not self.parser:
+            self._load_parser()
+        return self.parser.get_all_urls()
+
+    def update_parameter(self, param_name: str, new_value: str, create_backup: bool = True) -> bool:
+        """
+        Update a specific parameter value.
+
+        Args:
+            param_name: Name of the parameter to update
+            new_value: New value for the parameter
+            create_backup: Whether to create a backup before updating
+
+        Returns:
+            True if parameter was updated successfully
+        """
+        if not self.parser:
+            self._load_parser()
+
+        if self.parser.update_parameter(param_name, new_value):
+            modified_content = self.parser.get_modified_content()
+            self.write_script(modified_content, create_backup=create_backup)
+            self._load_parser()  # Reload parser with updated content
+            return True
+
+        return False
+
+    def toggle_section(self, section_name: str, enabled: bool, create_backup: bool = True) -> bool:
+        """
+        Enable or disable a deployment section.
+
+        Args:
+            section_name: Name of the section to toggle
+            enabled: True to enable, False to disable
+            create_backup: Whether to create a backup before toggling
+
+        Returns:
+            True if section was toggled successfully
+        """
+        if not self.parser:
+            self._load_parser()
+
+        if self.parser.toggle_section(section_name, enabled):
+            modified_content = self.parser.get_modified_content()
+            self.write_script(modified_content, create_backup=create_backup)
+            self._load_parser()  # Reload parser with updated content
+            return True
+
+        return False
+
+    def batch_update_parameters(self, updates: dict, create_backup: bool = True) -> dict:
+        """
+        Update multiple parameters at once.
+
+        Args:
+            updates: Dictionary of {param_name: new_value}
+            create_backup: Whether to create a backup before updating
+
+        Returns:
+            Dictionary of {param_name: success_bool}
+        """
+        if not self.parser:
+            self._load_parser()
+
+        results = {}
+        modified = False
+
+        for param_name, new_value in updates.items():
+            if self.parser.update_parameter(param_name, new_value):
+                results[param_name] = True
+                modified = True
+            else:
+                results[param_name] = False
+
+        if modified:
+            modified_content = self.parser.get_modified_content()
+            self.write_script(modified_content, create_backup=create_backup)
+            self._load_parser()  # Reload parser with updated content
+
+        return results
