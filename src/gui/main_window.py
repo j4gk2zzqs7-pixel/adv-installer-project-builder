@@ -24,6 +24,7 @@ from core.build_manager import BuildManager
 from utils.image_converter import ImageConverter
 from utils.powershell_editor import PowerShellEditor
 from gui.modern_dark_theme import apply_modern_dark_theme
+from gui.image_preview_widget import ImagePreviewWidget
 
 
 class BuildThread(QThread):
@@ -166,8 +167,14 @@ class MainWindow(QMainWindow):
         tab = QWidget()
         layout = QVBoxLayout()
 
-        # Icon selection
-        icon_group = QGroupBox("Конвертация иконки")
+        # Create splitter for source and result previews
+        splitter = QSplitter(Qt.Horizontal)
+
+        # Left side: Icon selection and source preview
+        left_widget = QWidget()
+        left_layout = QVBoxLayout()
+
+        icon_group = QGroupBox("Исходное изображение")
         icon_layout = QVBoxLayout()
 
         # File selection
@@ -183,12 +190,13 @@ class MainWindow(QMainWindow):
 
         icon_layout.addLayout(file_layout)
 
-        # Preview
+        # Source preview
         self.icon_preview = QLabel()
         self.icon_preview.setObjectName("icon_preview")
         self.icon_preview.setFixedSize(256, 256)
         self.icon_preview.setAlignment(Qt.AlignCenter)
-        self.icon_preview.setText("Предпросмотр")
+        self.icon_preview.setText("Предпросмотр исходного файла")
+        self.icon_preview.setStyleSheet("QLabel { border: 1px solid #555; background: #2a2a2a; }")
 
         icon_layout.addWidget(self.icon_preview, alignment=Qt.AlignCenter)
 
@@ -199,8 +207,31 @@ class MainWindow(QMainWindow):
         icon_layout.addWidget(convert_btn)
 
         icon_group.setLayout(icon_layout)
-        layout.addWidget(icon_group)
-        layout.addStretch()
+        left_layout.addWidget(icon_group)
+        left_layout.addStretch()
+        left_widget.setLayout(left_layout)
+
+        # Right side: Generated files preview
+        right_widget = QWidget()
+        right_layout = QVBoxLayout()
+
+        preview_group = QGroupBox("Сгенерированные файлы")
+        preview_layout = QVBoxLayout()
+
+        # Create image preview widget
+        self.generated_preview_widget = ImagePreviewWidget()
+
+        preview_layout.addWidget(self.generated_preview_widget)
+        preview_group.setLayout(preview_layout)
+        right_layout.addWidget(preview_group)
+        right_widget.setLayout(right_layout)
+
+        # Add widgets to splitter
+        splitter.addWidget(left_widget)
+        splitter.addWidget(right_widget)
+        splitter.setSizes([400, 600])  # Set initial sizes
+
+        layout.addWidget(splitter)
 
         tab.setLayout(layout)
         self.tabs.addTab(tab, "Конвертация иконки")
@@ -571,16 +602,26 @@ class MainWindow(QMainWindow):
                 base_name=Path(self.current_aip_path).stem + "Icon"
             )
 
+            # Extract ICO sizes for preview
+            ico_images = self.image_converter.extract_ico_sizes(result['ico'])
+
             # Update AIP file
             self.aip_manager.update_icon(result['bmp'])
             self.aip_manager.save()
+
+            # Show preview of generated files
+            self.generated_preview_widget.load_previews(
+                bmp_path=result['bmp'],
+                ico_path=result['ico'],
+                ico_images=ico_images
+            )
 
             self.statusBar().showMessage("Иконка конвертирована и применена")
             QMessageBox.information(
                 self,
                 "Успех",
                 f"Иконка успешно конвертирована:\n"
-                f"ICO: {Path(result['ico']).name}\n"
+                f"ICO: {Path(result['ico']).name} ({len(ico_images)} размеров)\n"
                 f"BMP: {Path(result['bmp']).name}"
             )
 

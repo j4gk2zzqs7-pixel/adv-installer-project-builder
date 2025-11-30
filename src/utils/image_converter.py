@@ -12,7 +12,7 @@ class ImageConverter:
     """Handles image conversion for Advanced Installer icons."""
 
     SUPPORTED_FORMATS = ['.png', '.jpg', '.jpeg']
-    ICO_SIZES = [(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)]
+    ICO_SIZES = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (96, 96), (128, 128), (256, 256)]
     BMP_SIZE = (256, 256)
 
     def __init__(self):
@@ -192,3 +192,41 @@ class ImageConverter:
             'format': img.format,
             'mode': img.mode
         }
+
+    def extract_ico_sizes(self, ico_path: str) -> dict:
+        """
+        Extract all available sizes from an ICO file.
+
+        Args:
+            ico_path: Path to the ICO file
+
+        Returns:
+            Dictionary mapping size tuples to PIL Image objects
+        """
+        if not os.path.exists(ico_path):
+            raise FileNotFoundError(f"ICO file not found: {ico_path}")
+
+        ico_images = {}
+
+        try:
+            # Open ICO file
+            img = Image.open(ico_path)
+
+            # ICO files can contain multiple sizes
+            # We need to iterate through all available sizes
+            if hasattr(img, 'n_frames'):
+                # Multi-resolution ICO
+                for i in range(img.n_frames):
+                    img.seek(i)
+                    size = img.size
+                    # Create a copy of the current frame
+                    ico_images[size] = img.copy()
+            else:
+                # Single resolution ICO
+                size = img.size
+                ico_images[size] = img.copy()
+
+        except Exception as e:
+            raise ValueError(f"Error extracting ICO sizes: {str(e)}")
+
+        return ico_images
