@@ -67,6 +67,9 @@ class MainWindow(QMainWindow):
         self.current_aip_path = None
         self.current_icon_pixmap = None  # Store current icon for editing
 
+        # For dragging frameless window
+        self.drag_position = None
+
         self.init_ui()
 
     def init_ui(self):
@@ -74,6 +77,9 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Advanced Installer Project Builder - Modern Edition")
         self.setGeometry(100, 100, 1200, 800)
         self.setMinimumSize(1000, 700)
+
+        # Make window frameless (flat design)
+        self.setWindowFlags(Qt.FramelessWindowHint)
 
         # Central widget
         central_widget = QWidget()
@@ -85,11 +91,23 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(15)
         central_widget.setLayout(main_layout)
 
-        # Добавляем стильный заголовок
+        # Добавляем заголовок с кнопкой закрытия
+        header_layout = QHBoxLayout()
+
         title_label = QLabel("⚙️ Advanced Installer Project Builder")
         title_label.setAccessibleName("heading")
-        title_label.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(title_label)
+        header_layout.addWidget(title_label)
+
+        header_layout.addStretch()
+
+        # Close button
+        close_btn = QPushButton("✕")
+        close_btn.setFixedSize(30, 30)
+        close_btn.setToolTip("Закрыть")
+        close_btn.clicked.connect(self.close)
+        header_layout.addWidget(close_btn)
+
+        main_layout.addLayout(header_layout)
 
         # Project selection section
         project_group = QGroupBox("Проект Advanced Installer")
@@ -1091,6 +1109,23 @@ class MainWindow(QMainWindow):
         versions_list.itemDoubleClicked.connect(restore_version)
 
         dialog.exec_()
+
+    def mousePressEvent(self, event):
+        """Handle mouse press for window dragging."""
+        if event.button() == Qt.LeftButton:
+            self.drag_position = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
+
+    def mouseMoveEvent(self, event):
+        """Handle mouse move for window dragging."""
+        if event.buttons() == Qt.LeftButton and self.drag_position is not None:
+            self.move(event.globalPos() - self.drag_position)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        """Handle mouse release."""
+        if event.button() == Qt.LeftButton:
+            self.drag_position = None
 
 
 def main():

@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QSlider, QColorDialog, QFileDialog, QMessageBox, QGroupBox,
     QButtonGroup, QRadioButton, QSpinBox
 )
-from PyQt5.QtCore import Qt, QPoint, QRect
+from PyQt5.QtCore import Qt, QPoint, QRect, QRectF
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, QPainterPath
 from PIL import Image, ImageDraw, ImageFilter
 import numpy as np
@@ -165,7 +165,7 @@ class DrawingCanvas(QLabel):
 
         # Create rounded rectangle path
         path = QPainterPath()
-        rect = QRect(0, 0, qimage.width(), qimage.height())
+        rect = QRectF(0, 0, qimage.width(), qimage.height())
         path.addRoundedRect(rect, radius, radius)
 
         # Clip to rounded rectangle and draw original image
