@@ -226,10 +226,14 @@ class MainWindow(QMainWindow):
         edit_btn = QPushButton("Редактировать изображение")
         edit_btn.clicked.connect(self.edit_icon_image)
 
+        convert_only_btn = QPushButton("Конвертировать только")
+        convert_only_btn.clicked.connect(self.convert_icon_only)
+
         convert_btn = QPushButton("Конвертировать и применить к проекту")
         convert_btn.clicked.connect(self.convert_and_apply_icon)
 
         buttons_layout.addWidget(edit_btn)
+        buttons_layout.addWidget(convert_only_btn)
         buttons_layout.addWidget(convert_btn)
 
         icon_layout.addLayout(buttons_layout)
@@ -715,6 +719,68 @@ class MainWindow(QMainWindow):
                 f"Иконка успешно конвертирована:\n"
                 f"ICO: {Path(result['ico']).name} ({len(ico_images)} размеров)\n"
                 f"BMP: {Path(result['bmp']).name}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", f"Не удалось конвертировать иконку:\n{str(e)}")
+
+    def convert_icon_only(self):
+        """Convert icon without applying to the project."""
+        icon_path = self.icon_path_edit.text()
+
+        if not icon_path:
+            QMessageBox.warning(self, "Ошибка", "Выберите изображение для конвертации")
+            return
+
+        try:
+            # Ask user for output directory
+            output_dir = QFileDialog.getExistingDirectory(
+                self,
+                "Выберите папку для сохранения конвертированных файлов",
+                "",
+                QFileDialog.ShowDirsOnly
+            )
+
+            if not output_dir:
+                return  # User cancelled
+
+            # Ask for base name
+            from PyQt5.QtWidgets import QInputDialog
+            base_name, ok = QInputDialog.getText(
+                self,
+                "Имя файла",
+                "Введите имя для файлов (без расширения):",
+                text=Path(icon_path).stem
+            )
+
+            if not ok or not base_name:
+                return  # User cancelled
+
+            # Convert image
+            result = self.image_converter.convert_image_for_installer(
+                icon_path,
+                output_dir,
+                base_name=base_name
+            )
+
+            # Extract ICO sizes for preview
+            ico_images = self.image_converter.extract_ico_sizes(result['ico'])
+
+            # Show preview of generated files
+            self.generated_preview_widget.load_previews(
+                bmp_path=result['bmp'],
+                ico_path=result['ico'],
+                ico_images=ico_images
+            )
+
+            self.statusBar().showMessage("Иконка конвертирована")
+            QMessageBox.information(
+                self,
+                "Успех",
+                f"Иконка успешно конвертирована:\n\n"
+                f"ICO: {Path(result['ico']).name} ({len(ico_images)} размеров)\n"
+                f"BMP: {Path(result['bmp']).name}\n\n"
+                f"Сохранено в: {output_dir}"
             )
 
         except Exception as e:
