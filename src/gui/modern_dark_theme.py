@@ -11,6 +11,8 @@ def get_modern_dark_stylesheet():
     /* ========== ОСНОВНЫЕ НАСТРОЙКИ ========== */
     QMainWindow {
         background-color: #1a1a2e;
+        border: 2px solid #0f3460;
+        border-radius: 12px;
     }
 
     QWidget {
@@ -18,6 +20,63 @@ def get_modern_dark_stylesheet():
         color: #eaeaea;
         font-family: 'Segoe UI', 'Arial', sans-serif;
         font-size: 10pt;
+    }
+
+    /* ========== CUSTOM TITLEBAR ========== */
+    QWidget#customTitleBar {
+        background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+            stop:0 #0f3460, stop:0.5 #1a4070, stop:1 #0f3460);
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        border-bottom: 2px solid #e94560;
+    }
+
+    QLabel#titleBarLabel {
+        background-color: transparent;
+        color: #ffffff;
+        font-size: 11pt;
+        font-weight: bold;
+        padding-left: 10px;
+    }
+
+    QPushButton#titleBarButton {
+        background-color: transparent;
+        color: #eaeaea;
+        border: none;
+        border-radius: 4px;
+        font-size: 16pt;
+        font-weight: normal;
+        padding: 0px;
+        margin: 2px;
+    }
+
+    QPushButton#titleBarButton:hover {
+        background-color: #1a4070;
+        color: #ffffff;
+    }
+
+    QPushButton#titleBarButton:pressed {
+        background-color: #0f3460;
+    }
+
+    QPushButton#titleBarCloseButton {
+        background-color: transparent;
+        color: #eaeaea;
+        border: none;
+        border-radius: 4px;
+        font-size: 16pt;
+        font-weight: normal;
+        padding: 0px;
+        margin: 2px;
+    }
+
+    QPushButton#titleBarCloseButton:hover {
+        background-color: #e94560;
+        color: #ffffff;
+    }
+
+    QPushButton#titleBarCloseButton:pressed {
+        background-color: #c23350;
     }
 
     /* ========== ГРУППЫ ========== */
@@ -83,6 +142,8 @@ def get_modern_dark_stylesheet():
         font-weight: bold;
         font-size: 10pt;
         min-height: 25px;
+        min-width: 80px;
+        text-align: center;
     }
 
     QPushButton:hover {
@@ -109,6 +170,7 @@ def get_modern_dark_stylesheet():
         background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
             stop:0 #0f3460, stop:1 #0a2747);
         color: #eaeaea;
+        min-width: 60px;
     }
 
     QPushButton[text="Обзор..."]:hover,
@@ -116,6 +178,13 @@ def get_modern_dark_stylesheet():
     QPushButton[text="Обновить"]:hover {
         background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
             stop:0 #1a4070, stop:1 #0f3460);
+    }
+
+    /* Маленькие кнопки "..." */
+    QPushButton[text="..."] {
+        min-width: 40px;
+        max-width: 50px;
+        padding: 10px 5px;
     }
 
     /* ========== ПОЛЯ ВВОДА ========== */

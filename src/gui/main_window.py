@@ -24,6 +24,7 @@ from core.build_manager import BuildManager
 from utils.image_converter import ImageConverter
 from utils.powershell_editor import PowerShellEditor
 from gui.modern_dark_theme import apply_modern_dark_theme
+from gui.custom_titlebar import CustomTitleBar
 
 
 class BuildThread(QThread):
@@ -68,6 +69,10 @@ class MainWindow(QMainWindow):
 
     def init_ui(self):
         """Initialize the user interface."""
+        # Убираем стандартное оформление окна (frameless)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Window)
+        self.setAttribute(Qt.WA_TranslucentBackground, False)
+
         self.setWindowTitle("Advanced Installer Project Builder - Modern Edition")
         self.setGeometry(100, 100, 1200, 800)
         self.setMinimumSize(1000, 700)
@@ -76,17 +81,23 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
 
-        # Main layout
+        # Main layout с учетом frameless окна
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(2, 2, 2, 2)
+        main_layout.setSpacing(0)
         central_widget.setLayout(main_layout)
 
-        # Добавляем стильный заголовок
-        title_label = QLabel("⚙️ Advanced Installer Project Builder")
-        title_label.setAccessibleName("heading")
-        title_label.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(title_label)
+        # Добавляем custom titlebar
+        self.titlebar = CustomTitleBar(self)
+        main_layout.addWidget(self.titlebar)
+
+        # Content widget с отступами
+        content_widget = QWidget()
+        content_layout = QVBoxLayout()
+        content_layout.setContentsMargins(20, 15, 20, 20)
+        content_layout.setSpacing(15)
+        content_widget.setLayout(content_layout)
+        main_layout.addWidget(content_widget)
 
         # Project selection section
         project_group = QGroupBox("Проект Advanced Installer")
@@ -107,11 +118,11 @@ class MainWindow(QMainWindow):
         project_layout.addWidget(load_btn)
         project_group.setLayout(project_layout)
 
-        main_layout.addWidget(project_group)
+        content_layout.addWidget(project_group)
 
         # Tab widget for different functionalities
         self.tabs = QTabWidget()
-        main_layout.addWidget(self.tabs)
+        content_layout.addWidget(self.tabs)
 
         # Create tabs
         self.create_project_info_tab()
