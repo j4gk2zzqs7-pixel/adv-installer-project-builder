@@ -7,6 +7,14 @@ import os
 from pathlib import Path
 from typing import Tuple, List
 
+# Compatibility fix for different Pillow versions
+# Pillow >= 9.1.0 uses Image.Resampling.LANCZOS
+# Older versions use Image.LANCZOS
+try:
+    LANCZOS = Image.Resampling.LANCZOS
+except AttributeError:
+    LANCZOS = Image.LANCZOS
+
 
 class ImageConverter:
     """Handles image conversion for Advanced Installer icons."""
@@ -68,7 +76,7 @@ class ImageConverter:
         # Create images at different sizes
         icon_images = []
         for size in sizes:
-            resized = img.resize(size, Image.Resampling.LANCZOS)
+            resized = img.resize(size, LANCZOS)
             icon_images.append(resized)
 
         # Save as ICO with multiple sizes
@@ -111,7 +119,7 @@ class ImageConverter:
         img = Image.open(input_path)
 
         # Resize to target size
-        img_resized = img.resize(size, Image.Resampling.LANCZOS)
+        img_resized = img.resize(size, LANCZOS)
 
         # Convert to RGB (BMP doesn't support alpha channel well)
         if img_resized.mode == 'RGBA':
